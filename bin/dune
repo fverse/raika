@@ -1,0 +1,4 @@
+(executable
+ (public_name raika)
+ (name main)
+ (libraries raika))
