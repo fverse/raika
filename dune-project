@@ -1,4 +1,4 @@
-(lang dune 3.19)
+(lang dune 3.0)
 
 (name raika)
 
@@ -19,7 +19,7 @@
  (name raika)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml)
+ (depends ocaml dune lwt)
  (tags
   ("add topics" "to describe" your project)))
 
