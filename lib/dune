@@ -1,2 +1,5 @@
 (library
- (name raika))
+ (name raika)
+ (libraries lwt lwt.unix))
+
+; (public_name raika.lib))
