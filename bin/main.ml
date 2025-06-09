@@ -3,6 +3,7 @@ open Lwt.Syntax
 let exec_processes () =
   (* TODO: take file as a command line argument *)
   let proc_defs = Raika.load_procfile "Procfile" in
+  let (waiter, wakener) = Lwt.wait () in
 
   if proc_defs = [] then
     begin
@@ -11,14 +12,27 @@ let exec_processes () =
     end
   else
     begin
-      let promises =
-        List.map
-          (fun proc_def -> Raika.exec_proc proc_def)
-          proc_defs
-      in
+      let processes = ref [] in
+      let process_statuses = ref [] in
 
-      let* () = Lwt.join promises in
+      let _ = Lwt_unix.on_signal Sys.sigint (fun _ ->
+        prerr_endline "\nCaught Ctrl+C, shutting down all processes...";
 
+         (* Iterate over the processes list
+         and call the 'terminate' method on each process *)
+         List.iter (fun proc ->
+           proc#terminate
+         ) !processes;
+        Lwt.wakeup wakener ();
+      ) in
+
+      List.iter (fun proc_def ->
+        let (process, status) = Raika.exec_proc proc_def in
+        processes := process :: !processes;
+        process_statuses := status :: !process_statuses;
+      ) proc_defs;
+
+      let* () = Lwt.pick [Lwt.join !process_statuses; waiter] in
       Lwt.return_unit
     end
 

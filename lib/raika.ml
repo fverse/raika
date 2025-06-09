@@ -61,12 +61,13 @@ let get_shell_command cmd =
   | "Win32" -> ("", [|"cmd.exe"; "/c"; "\000" ^ cmd|])
   | _ -> failwith "Unsupported OS"
   
-let exec_proc (proc : process) : unit Lwt.t =
+let exec_proc (proc : process) : (Lwt_process.process_full * unit Lwt.t) =
   print_newline (); 
 
   let command = get_shell_command proc.command in
   let process = Lwt_process.open_process_full command in
-
+   
+  let status =
   (* Log stdout and stderr with the process name as the prefix *)
   let log_stdout = log proc.proc_name process#stdout in
   let log_stderr = log (proc.proc_name ^ " (err)") process#stderr in
@@ -82,5 +83,7 @@ let exec_proc (proc : process) : unit Lwt.t =
       Printf.printf ">> Process '%s' exited with error code %d\n" proc.proc_name code
   | _ -> Printf.printf ">> Process %s was terminated unexpectedly\n" proc.proc_name
       );
-      
   Lwt.return_unit
+  in 
+      
+  (process, status)
