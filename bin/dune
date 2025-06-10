@@ -1,6 +1,6 @@
 (executable
  (public_name raika)
  (name main)
- (libraries lwt lwt.unix raika)
+ (libraries lwt lwt.unix raika cmdliner)
  (preprocess
   (pps lwt_ppx)))
