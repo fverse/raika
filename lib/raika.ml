@@ -1,8 +1,7 @@
 open Lwt.Syntax
+open Util
 
-type process = { proc_name : string; command : string }
-
-let trim_string = String.trim
+type process = { proc_name : string; command : string; color : string }
 
 (* Parses a single, valid line into a 'process' *)
 let parse_line line =
@@ -10,37 +9,74 @@ let parse_line line =
   | [ name; command ] ->
       let proc_name = trim_string name in
       let command = trim_string command in
-      if name <> "" && command <> "" then Some { proc_name; command } else None
+      if name <> "" && command <> "" then
+        Some { proc_name; command; color = "" }
+      else None
   (* Ignore invalid lines *)
   | _ -> None
 
+let colors =
+  [|
+    "\x1b[36m";
+    (* Cyan *)
+    "\x1b[32m";
+    (* Green *)
+    "\x1b[35m";
+    (* Magenta *)
+    "\x1b[33m";
+    (* Yellow *)
+    "\x1b[34m";
+    (* Blue *)
+    "\x1b[31m";
+    (* Red *)
+  |]
+
+let reset_color = "\x1b[0m"
+
+let assign_colors processes =
+  List.mapi
+    (fun i proc ->
+      let color = colors.(i mod Array.length colors) in
+      { proc with color })
+    processes
+
 (* Reads a file and returns a list of parsed process defs *)
 let load_procfile filepath =
-  let channel = open_in filepath in
-  let rec read_lines acc =
-    try
-      let line = input_line channel in
-      read_lines (line :: acc)
-    with End_of_file -> acc
-  in
-  let all_lines = read_lines [] in
-  close_in channel;
+  try
+    let channel = open_in filepath in
+    let rec read_lines acc =
+      try
+        let line = input_line channel in
+        read_lines (line :: acc)
+      with End_of_file -> acc
+    in
+    let all_lines = read_lines [] in
+    close_in channel;
 
-  List.filter_map
-    (fun line ->
-      let trimmed = trim_string line in
-      (* Skip comments and blank lines *)
-      if String.length trimmed == 0 || String.starts_with ~prefix:"#" trimmed
-      then None
-      else parse_line trimmed)
-    (List.rev all_lines)
+    let processes =
+      List.filter_map
+        (fun line ->
+          let trimmed = trim_string line in
+          (* Skip comments and blank lines *)
+          if
+            String.length trimmed == 0 || String.starts_with ~prefix:"#" trimmed
+          then None
+          else parse_line trimmed)
+        (List.rev all_lines)
+    in
 
-let log prefix stream =
+    assign_colors processes
+  with Sys_error err ->
+    (* Printf.eprintf "%s Error reading Procfile: %s\n" red err; *)
+    print_error (Printf.sprintf "Error reading Procfile: %s" err);
+    []
+
+let log prefix stream color =
   let rec loop () =
     let* line = Lwt_io.read_line_opt stream in
     match line with
     | Some line ->
-        Printf.printf "%s | %s\n" prefix line;
+        Printf.printf "%s%s | %s%s\n" color prefix line reset_color;
         loop ()
     | None -> Lwt.return_unit
   in
@@ -62,8 +98,10 @@ let exec_proc (proc : process) : Lwt_process.process_full * unit Lwt.t =
 
   let status =
     (* Log stdout and stderr with the process name as the prefix *)
-    let log_stdout = log proc.proc_name process#stdout in
-    let log_stderr = log (proc.proc_name ^ " (err)") process#stderr in
+    let log_stdout = log proc.proc_name process#stdout proc.color in
+    let log_stderr =
+      log (proc.proc_name ^ " (err)") process#stderr proc.color
+    in
 
     let* () = Lwt.join [ log_stdout; log_stderr ] in
 
