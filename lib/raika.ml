@@ -41,7 +41,7 @@ let assign_colors processes =
     processes
 
 (* Reads a file and returns a list of parsed process defs *)
-let load_procfile filepath =
+let load_procfile filepath no_color =
   try
     let channel = open_in filepath in
     let rec read_lines acc =
@@ -64,8 +64,7 @@ let load_procfile filepath =
           else parse_line trimmed)
         (List.rev all_lines)
     in
-
-    assign_colors processes
+    if no_color then processes else assign_colors processes
   with Sys_error err ->
     (* Printf.eprintf "%s Error reading Procfile: %s\n" red err; *)
     print_error (Printf.sprintf "Error reading Procfile: %s" err);
