@@ -1,7 +1,7 @@
 open Cmdliner
 open Lwt.Syntax
 
-type command = { file : string; no_color : bool }
+type command = { file : string; no_color : bool; shell : string }
 
 let exec_processes (cmd : command) =
   (Lwt.async_exception_hook :=
@@ -30,7 +30,7 @@ let exec_processes (cmd : command) =
 
       List.iter
         (fun proc_def ->
-          let process, status = Raika.exec_proc proc_def in
+          let process, status = Raika.exec_proc proc_def cmd.shell in
           processes := process :: !processes;
           process_statuses := status :: !process_statuses)
         proc_defs;
@@ -52,9 +52,15 @@ let disable_colored_log =
 
   Arg.value (Arg.flag info)
 
+let shell =
+  let doc = "Specify the shell to use." in
+  let info = Arg.info [ "shell" ] ~doc in
+
+  Arg.value (Arg.opt Arg.string "" info)
+
 let command_term =
-  let builder file no_color = { file; no_color } in
-  Term.(const builder $ file_arg $ disable_colored_log)
+  let builder file no_color shell = { file; no_color; shell } in
+  Term.(const builder $ file_arg $ disable_colored_log $ shell)
 
 let main_term = Term.(const exec_processes $ command_term)
 

@@ -83,16 +83,19 @@ let log prefix stream color =
 
 (* Return the shell script based on the OS type. 
 This function also works as a helper to raise an exception when the os is not supported by the app *)
-let get_shell_command cmd =
-  match Sys.os_type with
-  | "Unix" -> ("", [| "/bin/sh"; "-c"; cmd |])
-  | "Win32" -> ("", [| "cmd.exe"; "/c"; "\000" ^ cmd |])
-  | _ -> failwith "Unsupported OS"
+let get_shell_command cmd shell =
+  if shell <> "" then (shell, [| shell; "-c"; cmd |])
+  else
+    match Sys.os_type with
+    | "Unix" -> ("", [| "/bin/sh"; "-c"; cmd |])
+    | "Win32" -> ("", [| "cmd.exe"; "/c"; "\000" ^ cmd |])
+    | _ -> failwith "Unsupported OS"
 
-let exec_proc (proc : process) : Lwt_process.process_full * unit Lwt.t =
+let exec_proc (proc : process) (shell : string) :
+    Lwt_process.process_full * unit Lwt.t =
   print_newline ();
 
-  let command = get_shell_command proc.command in
+  let command = get_shell_command proc.command shell in
   let process = Lwt_process.open_process_full command in
 
   let status =
