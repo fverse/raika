@@ -9,19 +9,19 @@ Note: Raiks is under development. Not all features are available now.
 **Build from source**  
 Currently, there are no prebuilt binaries available. You will need to build it from source, which requires OCaml, OPAM, and Dune to be installed.
 
-1. Clone the repository:
+Clone the repository:
 
    ```
    git clone https://github.com/fverse/raika.git && cd raika
    ```
 
-2. Install dependencies:
+Install dependencies:
 
    ```
    opam install . --deps-only
    ```
 
-3. Build the project:
+Build the project:
 
    ```
    dune build
