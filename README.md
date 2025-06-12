@@ -7,6 +7,7 @@ Note: Raiks is under development. Not all features are available now.
 ## Installation
 
 **Build from source**  
+
 Currently, there are no prebuilt binaries available. You will need to build it from source, which requires OCaml, OPAM, and Dune to be installed.
 
 Clone the repository:
