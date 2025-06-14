@@ -76,6 +76,7 @@ let log prefix stream color =
     match line with
     | Some line ->
         Printf.printf "%s%s | %s%s\n" color prefix line reset_color;
+        flush stdout;
         loop ()
     | None -> Lwt.return_unit
   in
